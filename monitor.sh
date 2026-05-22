@@ -108,9 +108,13 @@ check_nginx_sites() {
         if ($0 ~ /ssl|443/) { ssl=1; port="443" }
         else { match($0, /listen[[:space:]]+([0-9]+)/, m); if (m[1] != "") port=m[1] }
       }
-      in_server && /server_name[[:space:]]/ {
+      in_server && /(^|[^a-zA-Z_])server_name[[:space:]]/ {
         line=$0
-        sub(/.*server_name[[:space:]]+/, "", line)
+        # remove comentários
+        sub(/#.*/, "", line)
+        # só processa se ainda tiver server_name na linha
+        if (line !~ /(^|[^a-zA-Z_])server_name[[:space:]]/) next
+        sub(/.*[^a-zA-Z_]server_name[[:space:]]+|^server_name[[:space:]]+/, "", line)
         sub(/;.*/, "", line)
         names=names" "line
       }
@@ -120,7 +124,15 @@ check_nginx_sites() {
   # Para cada (porta, server_name), faz a verificação
   sort -u "$tmp" | while read -r port name; do
     [ -z "$name" ] && continue
-    # ignora lista
+    # ignora wildcards (não dá pra testar via HTTP direto)
+    case "$name" in *\**) continue ;; esac
+    # ignora nomes inválidos (sem ponto e não é localhost = provavelmente lixo do parser)
+    case "$name" in
+      localhost|_) continue ;;
+      *.*) ;;  # tem ponto, ok
+      *) continue ;;  # sem ponto e não é localhost → ignora
+    esac
+    # ignora lista configurada
     local skip=0
     for ig in $IGNORE_SITES; do
       [ "$name" = "$ig" ] && skip=1 && break
