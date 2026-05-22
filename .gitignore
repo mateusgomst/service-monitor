@@ -1,0 +1,9 @@
+# Configuração com token do Telegram — NUNCA commitar
+config.env
+
+# Estado interno (flags de quem está caído)
+state/
+
+# Logs
+monitor.log
+*.log
