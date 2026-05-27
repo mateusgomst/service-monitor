@@ -7,3 +7,7 @@ state/
 # Logs
 monitor.log
 *.log
+
+# Python
+__pycache__/
+*.pyc
